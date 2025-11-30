@@ -1,5 +1,3 @@
-
-
 import { Subject, SyllabusData, PredictionQuestion } from './types';
 
 export const MOTIVATIONAL_QUOTES = [
@@ -452,20 +450,22 @@ export const SYLLABUS_DATA: SyllabusData[] = [
 ];
 
 export const MOCK_NOTE_CONTENT = {
-  summary: "This is a placeholder summary. Please connect the Gemini API Key to generate specific chapter notes tailored for Class 10 Board Exams.",
+  summary: "Welcome to Note4Afsheen! You are currently viewing sample content because the app is running in offline mode. Connect a valid API Key to generate real-time AI summaries for this chapter.",
   keyConcepts: [
-    "Concept 1: Understanding the basics",
-    "Concept 2: Application in real world",
-    "Concept 3: Critical analysis"
+    "Fundamental Definition: Understand the core concept first.",
+    "Real-world Application: How is this used in daily life?",
+    "Critical Analysis: Pros, cons, and limitations.",
+    "Important Terminology: Memorize the bold terms in your textbook."
   ],
   formulas: [
-    "Formula 1: E = mc^2 (Example)",
-    "Formula 2: a^2 + b^2 = c^2"
+    "General Formula: A + B = C",
+    "Area of Circle: A = πr²",
+    "Force: F = ma"
   ],
   importantQuestions: [
-    { question: "Explain the significance of this topic.", answer: "This topic is fundamental because it serves as the basis for understanding advanced concepts in the field." },
-    { question: "Derive the fundamental formula.", answer: "Start with the basic assumptions, apply the laws of conservation, and integrate over the limits to derive the final expression." },
-    { question: "Compare and contrast with related topics.", answer: "While this topic focuses on static systems, related topics deal with dynamic systems involving time-dependent variables." }
+    { question: "What is the primary definition of this topic?", answer: "The primary definition refers to the core principle described in the NCERT textbook introduction." },
+    { question: "Explain one major application with an example.", answer: "One major application is in industrial processes, such as the example given in the chapter case study." },
+    { question: "Differentiate between Type A and Type B.", answer: "Type A focuses on structure, while Type B focuses on function. See table 2.1 in your book." }
   ]
 };
 

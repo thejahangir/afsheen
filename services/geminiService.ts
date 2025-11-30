@@ -40,11 +40,11 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
   const apiKey = process.env.API_KEY;
   
   // Fallback 1: No API Key (Local Dev / Demo Mode)
-  if (!apiKey) {
-    console.warn("API Key not found. Using mock data.");
+  if (!apiKey || apiKey === "YOUR_API_KEY" || apiKey.length < 10) {
+    console.warn("API Key is missing or invalid. Switching to Demo Mode.");
     return {
       ...MOCK_NOTE_CONTENT,
-      summary: `(Demo Mode) You are viewing placeholder notes for "${topicName}" because no API Key was detected. In a production environment, Gemini would generate specific content here.`
+      summary: `(Demo Mode) You are viewing sample notes for "${topicName}". To generate custom AI notes, please connect a valid Google Gemini API Key.`
     };
   }
 
@@ -52,7 +52,6 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
     const ai = new GoogleGenAI({ apiKey });
     const modelId = "gemini-2.5-flash"; 
 
-    // STRICT constraints to prevent output from being too large and getting truncated
     const prompt = `
       You are an expert tutor for Class 10 Board Exams.
       Create a revision note set for "${subjectName}" - "${topicName}".
@@ -80,7 +79,7 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
     const text = response.text;
     if (!text) throw new Error("Empty response from AI");
 
-    // Robust JSON Parsing: Extract JSON object from potentially messy string
+    // Robust JSON Parsing
     try {
       const startIndex = text.indexOf('{');
       const endIndex = text.lastIndexOf('}');
@@ -96,29 +95,33 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
       // Fallback 2: Parsing Error
       return {
         ...MOCK_NOTE_CONTENT,
-        summary: `(AI Parsing Error) We generated notes for ${topicName} but couldn't format them correctly. Showing placeholder data instead.`,
-        keyConcepts: [`Concept 1 for ${topicName}`, `Concept 2 for ${topicName}`, "Review text book for more details."],
-        importantQuestions: [
-           { question: `What is the main idea of ${topicName}?`, answer: "Refer to your NCERT textbook." },
-           { question: "Define the key term.", answer: "See chapter glossary." },
-           { question: "Explain the process.", answer: "Refer to class notes." }
+        summary: `We successfully connected to the AI but received an invalid format for "${topicName}". Showing standard revision points instead.`,
+        keyConcepts: [
+          `Review the NCERT definition for ${topicName}`,
+          "Focus on the solved examples in your textbook",
+          "Practice previous year questions related to this topic"
         ]
       };
     }
 
   } catch (error) {
     console.error("Gemini API Network/Gen Error:", error);
-    // Fallback 3: Network/API Error
+    // Fallback 3: Network/API Error - Clean Message
     return {
        ...MOCK_NOTE_CONTENT,
-       summary: `(Offline/Error Mode) Unable to connect to AI Service. Showing placeholder notes for "${topicName}". Please check your internet connection or API Key quota.`
+       summary: `We are currently viewing offline notes for "${topicName}". The AI service is unavailable at the moment (check your network or API Key). These notes cover the essentials.`,
+       keyConcepts: [
+         "Key Concept 1: Refer to your primary textbook",
+         "Key Concept 2: Review class notes", 
+         "Key Concept 3: Practice diagrams and graphs"
+       ]
     }; 
   }
 };
 
 export const searchVideoRecommendations = async (query: string): Promise<VideoSearchResult[]> => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey || apiKey.length < 10) return [];
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -135,17 +138,13 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
       4. Find at least 6 distinct results.
       5. You MUST include the specific valid YouTube Link for each video found via the Google Search tool.
       
-      Output Format:
-      Please list the videos using this exact format for each entry:
-
+      Output Format Block:
       ||VIDEO||
       Title: [Video Title]
       Channel: [Channel Name]
       URL: [YouTube URL]
-      Description: [Brief summary (1 sentence)]
+      Description: [Brief summary]
       ||END||
-      
-      Do not add numbering or bullet points outside this format. Just the blocks.
     `;
 
     const response = await ai.models.generateContent({
@@ -161,10 +160,7 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
     const results: VideoSearchResult[] = [];
     const seenIds = new Set<string>();
 
-    // Regex to capture the structured block
     const blockRegex = /\|\|VIDEO\|\|[\s\S]*?Title:\s*(.*?)[\r\n]+Channel:\s*(.*?)[\r\n]+URL:\s*(.*?)[\r\n]+Description:\s*(.*?)[\r\n]+\|\|END\|\|/gi;
-    
-    // Regex to extract ID from URL
     const ytIdRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
 
     let match;
@@ -186,9 +182,7 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
       }
     }
 
-    // Fallback: If structured parsing yields too few results
     if (results.length < 2) {
-      // Try extracting from grounding metadata
       const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       for (const chunk of chunks) {
          if (chunk.web && chunk.web.uri) {
@@ -220,7 +214,7 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
 
 export const generateLogo = async (): Promise<string | null> => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey || apiKey.length < 10) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
