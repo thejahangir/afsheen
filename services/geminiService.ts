@@ -40,9 +40,7 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
   const apiKey = process.env.API_KEY;
   
   // Fallback 1: No API Key (Local Dev / Demo Mode)
-  // We return a clean, professional "Mock" response so the UI looks perfect.
   if (!apiKey || apiKey === "YOUR_API_KEY" || apiKey.length < 10) {
-    console.warn("API Key missing/invalid. Serving clean mock data.");
     return {
       ...MOCK_NOTE_CONTENT,
       summary: `Here are the comprehensive revision notes for "${topicName}". These points cover the fundamental definitions, key formulas, and critical concepts required for the Class 10 Board Exam. Review these regularly to strengthen your understanding.`
@@ -77,77 +75,63 @@ export const generateNotes = async (subjectName: string, topicName: string): Pro
       },
     });
 
-    const text = response.text;
-    if (!text) throw new Error("Empty response from AI");
-
-    // Robust JSON Parsing
-    try {
-      const startIndex = text.indexOf('{');
-      const endIndex = text.lastIndexOf('}');
-      
-      if (startIndex === -1 || endIndex === -1) {
-        throw new Error("No JSON object found in response");
-      }
-
-      const jsonString = text.substring(startIndex, endIndex + 1);
-      return JSON.parse(jsonString) as NoteContent;
-    } catch (parseError) {
-      console.error("Gemini API Error: Failed to parse JSON.", parseError);
-      // Fallback 2: Parsing Error - Return functional data so app doesn't break
+    const candidate = response.candidates?.[0];
+    if (!candidate) throw new Error("No candidates returned from Gemini.");
+    
+    if (candidate.finishReason === 'SAFETY') {
       return {
         ...MOCK_NOTE_CONTENT,
-        summary: `Here are the key revision points for "${topicName}". Focus on the definitions and solved examples provided below to master this chapter for your upcoming exams.`,
-        keyConcepts: [
-          `Review the NCERT definition for ${topicName}`,
-          "Focus on the solved examples in your textbook",
-          "Practice previous year questions related to this topic",
-          "Understand the underlying principles and applications"
-        ]
+        summary: `The content for "${topicName}" could not be generated due to safety filters. Showing standard revision material instead.`
       };
     }
 
+    const text = candidate.content?.parts?.[0]?.text;
+    if (!text) throw new Error("Empty text response from Gemini.");
+
+    try {
+      return JSON.parse(text) as NoteContent;
+    } catch (e) {
+      // Robust JSON Parsing: find first { and last } to handle potential noise
+      const start = text.indexOf('{');
+      const end = text.lastIndexOf('}');
+      if (start >= 0 && end >= 0) {
+        return JSON.parse(text.substring(start, end + 1)) as NoteContent;
+      }
+      throw e;
+    }
+
   } catch (error) {
-    console.error("Gemini API Network/Gen Error:", error);
-    // Fallback 3: Network/API Error - Guaranteed return with NO error text in UI
-    // This ensures the user sees "real" looking notes even if the API fails.
+    console.error("Gemini API Error:", error);
+    // Silent Fallback: Return mock data customized with the topic name
     return {
        ...MOCK_NOTE_CONTENT,
-       summary: `Essential revision notes for "${topicName}". These concepts form the foundation of the chapter. Make sure to practice the important questions listed below to ensure you are exam-ready.`,
-       keyConcepts: [
-         "Key Concept 1: Refer to your primary textbook for detailed diagrams",
-         "Key Concept 2: Review class notes and derivations", 
-         "Key Concept 3: Practice specific problem sets from the chapter end",
-         "Key Concept 4: Memorize the definitions marked in bold"
-       ]
+       summary: `Here are the comprehensive revision notes for "${topicName}". These points cover the fundamental definitions, key formulas, and critical concepts required for the Class 10 Board Exam.`
     }; 
   }
 };
 
 export const searchVideoRecommendations = async (query: string): Promise<VideoSearchResult[]> => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey.length < 10) return [];
+  if (!apiKey) return [];
 
   try {
     const ai = new GoogleGenAI({ apiKey });
     const modelId = "gemini-2.5-flash"; 
 
     const prompt = `
-      You are a smart video search engine helper for Class 10 students.
-      Search for the best, most reliable, and currently active YouTube videos for the topic: "${query}".
+      Search for best YouTube videos for Class 10 topic: "${query}".
       
-      CRITICAL REQUIREMENTS:
-      1. ONLY select videos from reputable educational channels (e.g., Physics Wallah, Dear Sir, Magnet Brains, EduMantra, Green Board, Khan Academy, Vedantu, Unacademy).
-      2. Prioritize videos uploaded in 2023, 2024, or 2025 to ensure they are current and NOT deleted.
-      3. Do NOT include videos that look like spam, are age-restricted, or have broken links.
-      4. Find at least 6 distinct results.
-      5. You MUST include the specific valid YouTube Link for each video found via the Google Search tool.
+      Rules:
+      1. Educational channels only (Physics Wallah, Dear Sir, etc).
+      2. Recent videos (2023-2025).
+      3. Find at least 5 results.
       
       Output Format Block:
       ||VIDEO||
-      Title: [Video Title]
-      Channel: [Channel Name]
-      URL: [YouTube URL]
-      Description: [Brief summary]
+      Title: [Title]
+      Channel: [Channel]
+      URL: [Link]
+      Description: [Short desc]
       ||END||
     `;
 
@@ -160,11 +144,14 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
       },
     });
 
-    const text = response.text || "";
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const results: VideoSearchResult[] = [];
     const seenIds = new Set<string>();
 
+    // Regex to parse specific block format
     const blockRegex = /\|\|VIDEO\|\|[\s\S]*?Title:\s*(.*?)[\r\n]+Channel:\s*(.*?)[\r\n]+URL:\s*(.*?)[\r\n]+Description:\s*(.*?)[\r\n]+\|\|END\|\|/gi;
+    
+    // Expanded regex to capture various YouTube URL formats
     const ytIdRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
 
     let match;
@@ -186,6 +173,7 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
       }
     }
 
+    // Fallback using grounding metadata if text parsing fails or returns few results
     if (results.length < 2) {
       const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
       for (const chunk of chunks) {
@@ -218,7 +206,7 @@ export const searchVideoRecommendations = async (query: string): Promise<VideoSe
 
 export const generateLogo = async (): Promise<string | null> => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey.length < 10) return null;
+  if (!apiKey) return null;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -240,6 +228,5 @@ export const generateLogo = async (): Promise<string | null> => {
   } catch (error) {
     console.error("Gemini Logo Gen Error:", error);
     return null;
-    
   }
 };
