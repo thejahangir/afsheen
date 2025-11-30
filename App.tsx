@@ -292,7 +292,7 @@ const App: React.FC = () => {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-6 leading-tight">
-            Your Smart Notes for <br/>
+            Afsheen's Smart Notes for <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
               Class 10 Board Exam
             </span>
