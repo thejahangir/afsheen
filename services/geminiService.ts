@@ -236,5 +236,6 @@ export const generateLogo = async (): Promise<string | null> => {
   } catch (error) {
     console.error("Gemini Logo Gen Error:", error);
     return null;
+    
   }
 };

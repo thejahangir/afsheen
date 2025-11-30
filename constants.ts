@@ -631,6 +631,7 @@ export const PREDICTED_QUESTIONS_2026: PredictionQuestion[] = [
   { id: 'san29', subjectId: 'sanskrit', chapter: 'Grammar', type: 'Short', marks: 1, question: 'Vachya: Mayaa grantha pathyate. (Kartrivachya mein badlein)', answer: 'Aham grantham pathami.' },
   { id: 'san30', subjectId: 'sanskrit', chapter: 'Grammar', type: 'Short', marks: 1, question: 'Sandhi: Namah + Te = ____.', answer: 'Namaste' },
 
+
   // --- INFORMATION TECHNOLOGY (CODE 402) (30 Questions) ---
   { id: 'it1', subjectId: 'cs', chapter: 'Digital Documentation', type: 'Short', marks: 2, question: 'What are Styles in OpenOffice Writer? Name any two categories of styles.', answer: 'Styles are saved sets of formatting. Categories: Paragraph Styles, Character Styles, Page Styles, List Styles.' },
   { id: 'it2', subjectId: 'cs', chapter: 'Digital Documentation', type: 'Short', marks: 2, question: 'How can you insert an image in a document? Mention two ways.', answer: '1. Insert > Picture > From File. \n2. Drag and Drop. \n3. Copy and Paste.' },
